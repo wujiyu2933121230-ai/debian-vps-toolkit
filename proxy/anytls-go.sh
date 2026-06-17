@@ -414,7 +414,7 @@ change_password() {
     local old_exec
     old_exec=$(grep '^ExecStart=' "$ANYTLS_SERVICE_FILE")
     local new_exec
-    new_exec=$(echo "$old_exec" | sed "s/-p [^ ]*/-p $new_password/")
+    new_exec=${old_exec/-p */-p $new_password}
     sed -i "s|^ExecStart=.*|$new_exec|" "$ANYTLS_SERVICE_FILE"
 
     systemctl daemon-reload
