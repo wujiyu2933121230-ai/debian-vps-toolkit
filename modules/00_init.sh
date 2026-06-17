@@ -225,6 +225,22 @@ main() {
     echo -e "${CYAN}  Debian VPS 初始化${NC}"
     echo -e "${CYAN}=========================================${NC}"
     echo ""
+    echo "  将执行以下操作："
+    echo "    1. 系统更新         — apt update && apt upgrade"
+    echo "    2. 安装基础工具     — curl, wget, htop, ufw 等 15 个工具"
+    echo "    3. 系统清理         — 移除无用包，journal 日志限制 50M"
+    echo "    4. 配置 Swap        — 与内存等大（已有则跳过）"
+    echo "    5. 设置时区         — Asia/Shanghai"
+    echo "    6. 优化 DNS         — 8.8.8.8 / 1.1.1.1 + IPv6"
+    echo "    7. IPv4 优先        — 修改 gai.conf"
+    echo ""
+    read -r -p "  是否继续初始化？[Y/n]: " confirm
+    confirm=${confirm:-Y}
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        log_warn "初始化已取消"
+        exit 0
+    fi
+    echo ""
 
     system_update
     install_tools
