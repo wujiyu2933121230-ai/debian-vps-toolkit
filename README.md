@@ -16,6 +16,14 @@ bash <(curl -s https://raw.githubusercontent.com/wujiyu2933121230-ai/debian-vps-
 bash <(curl -s https://raw.githubusercontent.com/wujiyu2933121230-ai/debian-vps-toolkit/main/proxy/anytls-go.sh)
 ```
 
+## 一键安装 Hysteria 2
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/wujiyu2933121230-ai/debian-vps-toolkit/main/proxy/hysteria2.sh)
+```
+
+包含：环境检测 → 自动获取 IP → 交互配置 → AVX 检测下载 → 自签证书 + 指纹固定 → 端口跳跃 iptables → systemd 服务 → 输出 mihomo/URI 客户端配置
+
 ## SSH 管理
 
 ```bash
