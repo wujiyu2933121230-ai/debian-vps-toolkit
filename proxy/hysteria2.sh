@@ -39,18 +39,6 @@ gen_password() {
     echo "$pass"
 }
 
-get_public_ip() {
-    local ip
-    ip=$(curl -s --max-time 5 ifconfig.me 2>/dev/null)
-    if [[ -z "$ip" ]]; then
-        ip=$(curl -s --max-time 5 icanhazip.com 2>/dev/null)
-    fi
-    if [[ -z "$ip" ]]; then
-        ip=$(hostname -I 2>/dev/null | awk '{print $1}')
-    fi
-    echo "$ip"
-}
-
 detect_avx() {
     if grep -q ' avx ' /proc/cpuinfo 2>/dev/null; then
         return 0
@@ -111,28 +99,16 @@ install_hysteria2() {
     fi
     log_info "安装依赖: openssl, curl, wget, iptables..."
     apt update -qq
-    apt install -y -qq openssl curl wget iptables iptables-persistent 2>/dev/null
+    apt install -y -qq openssl curl wget iptables 2>/dev/null
 
-    # ---- 步骤 2: 获取公网 IP ----
+    # ---- 步骤 2: 输入服务器 IP ----
     echo ""
-    log_info "自动获取本机公网 IPv4..."
     local server_ip
-    server_ip=$(get_public_ip)
-    if [[ -z "$server_ip" ]]; then
-        log_error "无法获取公网 IP，请手动输入"
+    read -r -p "请输入服务器公网 IP: " server_ip
+    while [[ -z "$server_ip" ]]; do
+        log_error "IP 不能为空"
         read -r -p "请输入服务器公网 IP: " server_ip
-        while [[ -z "$server_ip" ]]; do
-            log_error "IP 不能为空"
-            read -r -p "请输入服务器公网 IP: " server_ip
-        done
-    else
-        echo -e "  检测到公网 IP: ${GREEN}$server_ip${NC}"
-    fi
-    read -r -p "确认使用此 IP？[Y/n]: " ip_confirm
-    ip_confirm=${ip_confirm:-Y}
-    if [[ ! "$ip_confirm" =~ ^[Yy]$ ]]; then
-        read -r -p "请输入服务器公网 IP: " server_ip
-    fi
+    done
 
     # ---- 步骤 3: 交互式输入参数 ----
     echo ""
