@@ -226,6 +226,7 @@ install_hysteria2() {
     # ---- 步骤 7: 生成服务端 config.yaml ----
     log_info "生成服务端配置..."
     cat > "$HY2_CONFIG" << YAMLEOF
+# META: server_ip=${server_ip} hop_range=${hop_range}
 listen: :${port}
 
 tls:
@@ -334,7 +335,7 @@ SERVICEEOF
     echo "    obfs: salamander"
     echo "    obfs-password: $obfs_password"
     echo "    sni: $server_ip"
-    echo "    skip-cert-verify: true"
+    echo "    skip-cert-verify: false"
     echo "    fingerprint: $fingerprint"
     echo "    alpn:"
     echo "      - h3"
@@ -348,6 +349,85 @@ SERVICEEOF
     echo "  重启: systemctl restart hysteria-server"
     echo "  状态: systemctl status hysteria-server"
     echo "  日志: journalctl -u hysteria-server -e"
+    echo ""
+    read -r -p "按 Enter 键返回主菜单..."
+}
+
+# ============================================
+# 查看订阅链接
+# ============================================
+show_subscription() {
+    echo ""
+    echo -e "${CYAN}=========================================${NC}"
+    echo -e "${CYAN}  Hysteria 2 订阅链接${NC}"
+    echo -e "${CYAN}=========================================${NC}"
+
+    if ! is_installed; then
+        echo -e "  运行状态: ${YELLOW}未安装${NC}"
+        echo ""
+        read -r -p "按 Enter 键返回主菜单..."
+        return
+    fi
+
+    if [[ ! -f "$HY2_CONFIG" ]]; then
+        log_error "配置文件不存在: $HY2_CONFIG"
+        read -r -p "按 Enter 键返回主菜单..."
+        return
+    fi
+
+    # 从 META 注释读取 server_ip 和 hop_range
+    local server_ip
+    local hop_range
+    server_ip=$(grep -oP '# META:.*server_ip=\K\S+' "$HY2_CONFIG" 2>/dev/null)
+    hop_range=$(grep -oP '# META:.*hop_range=\K\S+' "$HY2_CONFIG" 2>/dev/null)
+
+    if [[ -z "$server_ip" ]]; then
+        log_error "未找到服务器 IP 信息，请重新安装"
+        read -r -p "按 Enter 键返回主菜单..."
+        return
+    fi
+
+    # 从 listen 读取端口
+    local port
+    port=$(grep -oP 'listen:\s*:\K\d+' "$HY2_CONFIG" 2>/dev/null)
+
+    # 从 password 字段读取
+    local password
+    password=$(grep -oP '^\s*password:\s*\K.*' "$HY2_CONFIG" 2>/dev/null)
+
+    # 从 obfs salamander password 读取
+    local obfs_password
+    obfs_password=$(sed -n '/salamander:/,/^[a-z]/p' "$HY2_CONFIG" 2>/dev/null | grep -oP '^\s*password:\s*\K.*')
+
+    # 从证书提取指纹
+    local fingerprint
+    fingerprint=$(get_fingerprint "$HY2_CERT")
+
+    echo ""
+    echo "证书指纹 (SHA-256):"
+    echo "  $fingerprint"
+    echo ""
+    echo "客户端配置 (mihomo):"
+    echo "----------------------------------------"
+    echo "proxies:"
+    echo "  - name: \"hysteria2\""
+    echo "    type: hysteria2"
+    echo "    server: $server_ip"
+    echo "    port: $port"
+    echo "    ports: $hop_range"
+    echo "    hop-interval: 30"
+    echo "    password: $password"
+    echo "    bbr-profile: \"standard\""
+    echo "    obfs: salamander"
+    echo "    obfs-password: $obfs_password"
+    echo "    sni: $server_ip"
+    echo "    skip-cert-verify: false"
+    echo "    fingerprint: $fingerprint"
+    echo "    alpn:"
+    echo "      - h3"
+    echo ""
+    echo "URI:"
+    echo "  hysteria2://${password}@${server_ip}:${port}/?obfs=salamander&obfs-password=${obfs_password}&insecure=1&pinSHA256=${fingerprint}&sni=${server_ip}"
     echo ""
     read -r -p "按 Enter 键返回主菜单..."
 }
@@ -573,17 +653,19 @@ main_menu() {
         echo ""
         echo "  1. 安装 Hysteria 2 服务端"
         echo "  2. 查看当前配置与状态"
-        echo "  3. 卸载 Hysteria 2 服务端"
-        echo "  4. 修改密码"
-        echo "  5. 退出"
+        echo "  3. 查看订阅链接"
+        echo "  4. 卸载 Hysteria 2 服务端"
+        echo "  5. 修改密码"
+        echo "  6. 退出"
         echo ""
-        read -r -p "请选择 [1-5]: " choice
+        read -r -p "请选择 [1-6]: " choice
         case "$choice" in
             1) install_hysteria2 ;;
             2) show_status ;;
-            3) uninstall_hysteria2 ;;
-            4) change_password ;;
-            5) echo ""; exit 0 ;;
+            3) show_subscription ;;
+            4) uninstall_hysteria2 ;;
+            5) change_password ;;
+            6) echo ""; exit 0 ;;
             *) read -r -p "无效选择，按 Enter 键继续..." ;;
         esac
     done
